@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartTask Assistant</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>🧠 SmartTask - Productivity Assistant</h1>
+
+    <form action="/submit-task" method="post">
+        <input type="text" name="message" required placeholder="e.g. Remind me to call mom tomorrow at 10am">
+        <button type="submit">Submit</button>
+    </form>
+
+    {% if error %}
+        <div style="color: red;">{{ error }}</div>
+    {% endif %}
+
+    {% if task %}
+        <div style="color: green;">
+            <h3>✅ Task Saved!</h3>
+            <p><strong>Description:</strong> {{ task.description }}</p>
+            <p><strong>Date:</strong> {{ task.date }}</p>
+            <p><strong>Priority:</strong> {{ task.priority }}</p>
+        </div>
+    {% endif %}
+
+    {% if raw_response %}
+        <h4>🧾 Raw LLM Response:</h4>
+        <pre>{{ raw_response }}</pre>
+    {% endif %}
+
+    <h2>📋 Task List</h2>
+    <ul>
+        {% for t in tasks %}
+            <li>{{ t.description }} — {{ t.date }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
