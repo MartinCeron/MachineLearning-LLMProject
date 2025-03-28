@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar - SmartTask Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-brain"></i> SmartTask - Productivity Assistant</h1>
+            <nav>
+                <ul>
+                    <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="/tasks"><i class="fas fa-tasks"></i> All Tasks</a></li>
+                    <li class="active"><a href="/calendar"><i class="fas fa-calendar"></i> Calendar</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <section class="calendar-header">
+                <h2><i class="fas fa-calendar"></i> Google Calendar Integration</h2>
+                
+                {% if not has_calendar %}
+                    <div class="calendar-setup-card">
+                        <h3>Connect to Google Calendar</h3>
+                        <p>Connect your SmartTask Assistant to Google Calendar to sync your events and manage your schedule in one place.</p>
+                        <div class="setup-buttons">
+                            <a href="/calendar?setup=true" class="btn-primary">
+                                <i class="fab fa-google"></i> Connect Google Calendar
+                            </a>
+                        </div>
+                        <div class="setup-instructions">
+                            <h4>Setup Instructions:</h4>
+                            <ol>
+                                <li>Click the "Connect Google Calendar" button above</li>
+                                <li>Sign in to your Google account when prompted</li>
+                                <li>Grant permission for SmartTask to access your calendar</li>
+                                <li>You'll be redirected back to this page once connected</li>
+                            </ol>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="calendar-actions">
+                        <div class="calendar-filter">
+                            <form action="/calendar" method="get" class="filters-form">
+                                <div class="filter-group">
+                                    <label for="days">Time Range:</label>
+                                    <select id="days" name="days" onchange="this.form.submit()">
+                                        <option value="7" {% if days == 7 %}selected{% endif %}>Next 7 days</option>
+                                        <option value="14" {% if days == 14 %}selected{% endif %}>Next 14 days</option>
+                                        <option value="30" {% if days == 30 %}selected{% endif %}>Next 30 days</option>
+                                        <option value="90" {% if days == 90 %}selected{% endif %}>Next 90 days</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="filter-button">Apply</button>
+                            </form>
+                        </div>
+                        <div class="calendar-sync">
+                            <button onclick="syncCalendar()" class="btn-primary">
+                                <i class="fas fa-sync"></i> Sync Calendar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="calendar-display">
+                        <div class="calendar-view">
+                            <h3>Upcoming Events ({{ events|length }})</h3>
+                            
+                            {% if events and events|length > 0 %}
+                                <div class="calendar-events">
+                                    {% set current_date = "" %}
+                                    {% for event in events %}
+                                        {% set event_date = event.date.split('T')[0] %}
+                                        
+                                        {% if event_date != current_date %}
+                                            {% set current_date = event_date %}
+                                            <div class="calendar-date-header">
+                                                <h4>{{ current_date }}</h4>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <div class="calendar-event">
+                                            <div class="event-time">
+                                                {{ event.date.split('T')[1].split(':')[0] }}:{{ event.date.split('T')[1].split(':')[1] }}
+                                            </div>
+                                            <div class="event-details">
+                                                <div class="event-title">{{ event.description }}</div>
+                                                <div class="event-meta">
+                                                    {% if event.location %}
+                                                        <span class="event-location"><i class="fas fa-map-marker-alt"></i> {{ event.location }}</span>
+                                                    {% endif %}
+                                                    <span class="event-priority {{ event.priority }}">{{ event.priority }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="event-actions">
+                                                <button onclick="editEvent('{{ event.event_id }}')" title="Edit event" class="action-button">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button onclick="deleteEvent('{{ event.event_id }}')" title="Delete event" class="action-button">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="empty-list">No upcoming events in the selected time range.</p>
+                                <button onclick="showAddEventModal()" class="btn-primary">
+                                    <i class="fas fa-plus"></i> Create New Event
+                                </button>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="calendar-sidebar">
+                            <div class="add-event-card">
+                                <h3>Add Event</h3>
+                                <button onclick="showAddEventModal()" class="btn-full">
+                                    <i class="fas fa-plus"></i> New Event
+                                </button>
+                            </div>
+                            
+                            <div class="calendar-tips">
+                                <h3>Tips</h3>
+                                <ul>
+                                    <li>Events created in SmartTask will sync to your Google Calendar</li>
+                                    <li>Changes made in Google Calendar will sync back to SmartTask</li>
+                                    <li>Click "Sync Calendar" to manually refresh events</li>
+                                    <li>Use the natural language input on the home page to quickly create events</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 SmartTask Assistant | Built with FastAPI and GPT-Neo</p>
+        </footer>
+    </div>
+
+    <!-- Modal for adding a new event -->
+    <div id="addEventModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddEventModal()">&times;</span>
+            <h2>Add New Event</h2>
+            <form action="/tasks/create" method="post">
+                <input type="hidden" name="type" value="event">
+                <div class="form-group">
+                    <label for="description">Event Title:</label>
+                    <input type="text" id="description" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="date">Date and Time:</label>
+                    <input type="datetime-local" id="date" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="priority">Priority:</label>
+                    <select id="priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="category">Category:</label>
+                    <select id="category" name="category">
+                        <option value="work">Work</option>
+                        <option value="personal">Personal</option>
+                        <option value="health">Health</option>
+                        <option value="finance">Finance</option>
+                        <option value="education">Education</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="location">Location:</label>
+                    <input type="text" id="location" name="location">
+                </div>
+                <div class="form-group">
+                    <label for="participants">Participants (comma-separated):</label>
+                    <input type="text" id="participants" name="participants">
+                </div>
+                <div class="form-group">
+                    <label for="recurrence">Recurrence:</label>
+                    <select id="recurrence" name="recurrence">
+                        <option value="none">None (one-time event)</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Create Event</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for editing an event -->
+    <div id="editEventModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditEventModal()">&times;</span>
+            <h2>Edit Event</h2>
+            <form id="editEventForm" action="/tasks/" method="post">
+                <input type="hidden" id="edit_event_id" name="task_id">
+                <input type="hidden" name="type" value="event">
+                <div class="form-group">
+                    <label for="edit_description">Event Title:</label>
+                    <input type="text" id="edit_description" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_date">Date and Time:</label>
+                    <input type="datetime-local" id="edit_date" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit_priority">Priority:</label>
+                    <select id="edit_priority" name="priority">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit_category">Category:</label>
+                    <select id="edit_category" name="category">
+                        <option value="work">Work</option>
+                        <option value="personal">Personal</option>
+                        <option value="health">Health</option>
+                        <option value="finance">Finance</option>
+                        <option value="education">Education</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit_location">Location:</label>
+                    <input type="text" id="edit_location" name="location">
+                </div>
+                <div class="form-group">
+                    <label for="edit_participants">Participants (comma-separated):</label>
+                    <input type="text" id="edit_participants" name="participants">
+                </div>
+                <button type="submit" class="btn-primary">Update Event</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Modal functions
+        function showAddEventModal() {
+            document.getElementById('addEventModal').style.display = 'block';
+            // Set default date to now + 1 day
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(10, 0, 0, 0);
+            document.getElementById('date').value = tomorrow.toISOString().slice(0, 16);
+        }
+        
+        function closeAddEventModal() {
+            document.getElementById('addEventModal').style.display = 'none';
+        }
+        
+        function showEditEventModal() {
+            document.getElementById('editEventModal').style.display = 'block';
+        }
+        
+        function closeEditEventModal() {
+            document.getElementById('editEventModal').style.display = 'none';
+        }
+        
+        // Calendar operations
+        function syncCalendar() {
+            fetch('/api/sync-calendar', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`Calendar synced successfully. ${data.new_events} new events imported.`);
+                    window.location.reload();
+                } else {
+                    alert('Failed to sync calendar');
+                }
+            })
+            .catch(error => {
+                console.error('Error syncing calendar:', error);
+                alert('Failed to sync calendar');
+            });
+        }
+        
+        function deleteEvent(eventId) {
+            if (confirm('Are you sure you want to delete this event? This will remove it from Google Calendar as well.')) {
+                fetch(`/tasks/${eventId}/delete`, {
+                    method: 'POST'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        alert('Failed to delete event');
+                    }
+                });
+            }
+        }
+        
+        function editEvent(eventId) {
+            // Fetch event data
+            fetch(`/api/tasks?id=${eventId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const event = data.tasks.find(t => t.id === eventId || t.calendar_event_id === eventId);
+                    if (event) {
+                        // Populate form
+                        document.getElementById('edit_event_id').value = event.id;
+                        document.getElementById('edit_description').value = event.description;
+                        
+                        // Format date for datetime-local input
+                        const eventDate = new Date(event.date);
+                        const formattedDate = eventDate.toISOString().slice(0, 16);
+                        document.getElementById('edit_date').value = formattedDate;
+                        
+                        document.getElementById('edit_priority').value = event.priority;
+                        document.getElementById('edit_category').value = event.category || 'other';
+                        document.getElementById('edit_location').value = event.location || '';
+                        document.getElementById('edit_participants').value = event.participants ? event.participants.join(', ') : '';
+                        
+                        // Set form action
+                        document.getElementById('editEventForm').action = `/tasks/${event.id}/update`;
+                        
+                        // Show modal
+                        showEditEventModal();
+                    } else {
+                        alert('Event not found');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching event:', error);
+                    alert('Failed to load event details');
+                });
+        }
+        
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('addEventModal')) {
+                closeAddEventModal();
+            } else if (event.target === document.getElementById('editEventModal')) {
+                closeEditEventModal();
+            }
+        }
+    </script>
+</body>
+</html>

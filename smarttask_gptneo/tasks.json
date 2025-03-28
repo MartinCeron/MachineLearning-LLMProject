@@ -1,8 +1,44 @@
 [
   {
     "type": "remind",
-    "description": "submit my assignment",
-    "date": "2025-03-31T09:00:00Z",
-    "priority": "medium"
+    "description": "submit my machine learning assignment",
+    "date": "2025-03-29T18:00:00Z",
+    "priority": "medium",
+    "category": "personal",
+    "location": null,
+    "participants": [],
+    "recurrence": "none",
+    "estimated_duration": 30,
+    "id": "task_1743192409_8874281080090004661",
+    "created_at": "2025-03-28T16:06:49.583216",
+    "calendar_event_id": "6god53u2s858c5tl41ljc4tp38"
+  },
+  {
+    "type": "remind",
+    "description": "call brian",
+    "date": "2025-03-29T16:00:00Z",
+    "priority": "medium",
+    "category": "personal",
+    "location": null,
+    "participants": [],
+    "recurrence": "none",
+    "estimated_duration": 30,
+    "id": "task_1743192448_-7045361539232880382",
+    "created_at": "2025-03-28T16:07:28.769908",
+    "calendar_event_id": "mm3eolb5aev4t48jpio8n7nf84"
+  },
+  {
+    "type": "remind",
+    "description": "take out the trash",
+    "date": "2025-03-29T15:00:00Z",
+    "priority": "medium",
+    "category": "personal",
+    "location": null,
+    "participants": [],
+    "recurrence": "none",
+    "estimated_duration": 30,
+    "id": "task_1743192466_3116647160216535544",
+    "created_at": "2025-03-28T16:07:46.364271",
+    "calendar_event_id": "io1d46l8v6529ju0cun0i89bo4"
   }
 ]
