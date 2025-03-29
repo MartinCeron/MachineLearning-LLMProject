@@ -5,6 +5,10 @@ import json
 from datetime import datetime, timedelta
 import pytz
 from typing import Dict, Any, Optional, List, Tuple
+import dateparser
+from dateparser.search import search_dates
+from datetime import datetime, timedelta
+import parsedatetime
 
 # Use a smaller model for faster loading and less memory consumption
 DEFAULT_MODEL = "EleutherAI/gpt-neo-125M"  # Smaller model for better performance
@@ -66,56 +70,33 @@ def get_current_date_info() -> Dict[str, str]:
     }
 
 def interpret_user_input(user_input: str) -> Tuple[Dict[str, Any], str]:
-    """
-    Process user input through rule-based extraction to create structured task information.
-    
-    Args:
-        user_input: Natural language request from the user
-        
-    Returns:
-        tuple: (parsed_json_data, raw_response)
-    """
-    # Extract description directly from user input
     description = user_input
-    
-    # For "remind me to X" pattern
+
     if "remind me to " in user_input.lower():
         description_match = re.search(r"remind me to (.+?)(?:on|at|tomorrow|next|$)", user_input.lower())
         if description_match:
             description = description_match.group(1).strip()
-    
-    # For "take out the trash" specifically (since you mentioned this exact task)
+
     if "take out the trash" in user_input.lower() or "trash" in user_input.lower():
         description = "take out the trash"
-        
-    # Determine task type
+
     task_type = "task"
     if "remind" in user_input.lower():
         task_type = "remind"
     elif "schedule" in user_input.lower() or "meeting" in user_input.lower():
         task_type = "event"
-    
-    # Extract date and time
-    task_date = datetime.now() + timedelta(days=1)  # Default to tomorrow
-    
-    if "tomorrow" in user_input.lower():
-        task_date = datetime.now() + timedelta(days=1)
-    
-    # Extract time - explicitly handle 3pm
-    if "3pm" in user_input.lower() or "3 pm" in user_input.lower():
-        task_date = task_date.replace(hour=15, minute=0, second=0, microsecond=0)
+
+    # Date and time parsing using dateparser
+    cal = parsedatetime.Calendar()
+    time_struct, parse_status = cal.parse(user_input)
+
+    if parse_status == 0:
+        parsed_datetime = datetime.now() + timedelta(days=1)
     else:
-        # General time extraction
-        time_match = re.search(r"(\d{1,2})(?::(\d{2}))?(?:\s*)(am|pm)", user_input.lower())
-        if time_match:
-            hour = int(time_match.group(1))
-            minute = int(time_match.group(2) or 0)
-            am_pm = time_match.group(3)
-            if am_pm.lower() == 'pm' and hour < 12:
-                hour += 12
-            task_date = task_date.replace(hour=hour, minute=minute, second=0, microsecond=0)
-    
-    # Create the task data
+        parsed_datetime = datetime(*time_struct[:6])
+
+    task_date = parsed_datetime
+
     task_data = {
         "type": task_type,
         "description": description,
@@ -127,8 +108,7 @@ def interpret_user_input(user_input: str) -> Tuple[Dict[str, Any], str]:
         "recurrence": "none",
         "estimated_duration": 30
     }
-    
-    # Return the task data and a string representation
+
     return task_data, json.dumps(task_data, indent=2)
 
 def get_task_suggestions(tasks: List[Dict[str, Any]], count: int = 3) -> List[Dict[str, Any]]:
