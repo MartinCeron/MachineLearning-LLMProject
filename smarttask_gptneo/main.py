@@ -354,18 +354,22 @@ async def get_calendar(request: Request, days: int = Query(14), setup: bool = Qu
             "setup_error": str(e)
         })
 
-@app.post("/send-reminder/{task_id}")
-async def send_reminder(task_id: str):
-    """Manually send a reminder for a task."""
-    task = task_scheduler.get_task(task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
+@app.post("/send-reminder")
+async def send_reminder(request: Request):
+    data = await request.json()
+    task = data.get("task")
+    email = data.get("email")
+
+    if not task or not email:
+        return {"status": "error", "message": "Missing task or email"}
+
+    task["participants"] = [email]
     success = send_email_reminder(task)
-    if not success:
-        raise HTTPException(status_code=400, detail="Failed to send reminder")
     
-    return {"status": "success"}
+    if success:
+        return {"status": "ok", "message": "Reminder sent"}
+    else:
+        return {"status": "error", "message": "Email sending failed"}
 
 @app.post("/send-report")
 async def send_report(email: str = Form(...)):

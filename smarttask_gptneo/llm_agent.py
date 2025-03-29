@@ -86,6 +86,15 @@ def interpret_user_input(user_input: str) -> Tuple[Dict[str, Any], str]:
     elif "schedule" in user_input.lower() or "meeting" in user_input.lower():
         task_type = "event"
 
+    # Detect priority
+    priority = "medium"
+    if "high priority" in user_input.lower() or "very important" in user_input.lower():
+        priority = "high"
+    elif "low priority" in user_input.lower() or "not urgent" in user_input.lower():
+        priority = "low"
+    elif "medium priority" in user_input.lower():
+        priority = "medium"
+
     # Date and time parsing using dateparser
     cal = parsedatetime.Calendar()
     time_struct, parse_status = cal.parse(user_input)
@@ -101,7 +110,7 @@ def interpret_user_input(user_input: str) -> Tuple[Dict[str, Any], str]:
         "type": task_type,
         "description": description,
         "date": task_date.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "priority": "medium",
+        "priority": priority,
         "category": "personal",
         "location": None,
         "participants": [],

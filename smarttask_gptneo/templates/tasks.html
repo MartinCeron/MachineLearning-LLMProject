@@ -352,20 +352,42 @@
         }
         
         function sendReminder(taskId) {
-            if (confirm('Send a reminder for this task?')) {
-                fetch(`/send-reminder/${taskId}`, {
-                    method: 'POST'
+        fetch(`/api/tasks?id=${taskId}`)
+            .then(res => res.json())
+            .then(data => {
+                const task = data.tasks.find(t => t.id === taskId);
+                if (!task) {
+                    alert("Task not found.");
+                    return;
+                }
+
+                // Optional: prompt user for email
+                const email = prompt("Enter your email to receive a reminder:");
+                if (!email) return;
+
+                task.participants = [email];
+
+                fetch("/send-reminder", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, task })
                 })
-                .then(response => {
-                    if (response.ok) {
-                        alert('Reminder sent successfully');
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "ok") {
+                        alert("Reminder sent!");
                     } else {
-                        alert('Failed to send reminder');
+                        alert("Failed to send reminder: " + data.message);
                     }
                 });
-            }
+            })
+            .catch(err => {
+                console.error("Error fetching task:", err);
+                alert("Error fetching task data.");
+            });
         }
-        
+
+
         // Close modals when clicking outside
         window.onclick = function(event) {
             if (event.target === document.getElementById('addTaskModal')) {
