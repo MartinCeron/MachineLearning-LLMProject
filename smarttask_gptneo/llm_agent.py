@@ -10,7 +10,6 @@ from dateparser.search import search_dates
 from datetime import datetime, timedelta
 import parsedatetime
 
-# Use a smaller model for faster loading and less memory consumption
 DEFAULT_MODEL = "EleutherAI/gpt-neo-125M"  # Smaller model for better performance
 OPENAI_FALLBACK = os.environ.get("USE_OPENAI", "false").lower() == "true"
 
@@ -22,7 +21,7 @@ def load_primary_model():
     """Load the primary Hugging Face model."""
     global primary_generator
     print(f"[LLM] Loading primary model: {DEFAULT_MODEL}...")
-    # Remove the 'truncation' parameter which is causing the error
+    
     primary_generator = pipeline(
         "text-generation",
         model=DEFAULT_MODEL,
@@ -194,7 +193,7 @@ def get_task_suggestions(tasks: List[Dict[str, Any]], count: int = 3) -> List[Di
             "category": "education"
         })
     
-    # Generic suggestions if we don't have enough yet
+    
     generic_suggestions = [
         {
             "type": "task",
@@ -228,7 +227,7 @@ def get_task_suggestions(tasks: List[Dict[str, Any]], count: int = 3) -> List[Di
         }
     ]
     
-    # Add generic suggestions if we don't have enough
+   
     while len(suggestions) < count:
         if not generic_suggestions:
             break
